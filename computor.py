@@ -23,7 +23,7 @@ def multipy(_terms):
             _t1 = re.match("(?:[*]-?|[+\-])(?:(\d*)[xX](?:\^(\d{1}))?|(\d+))", _terms[i - 1])
             _t2 = re.match("(?:[*]-?|[+\-])(?:(\d*)[xX](?:\^(\d{1}))?|(\d+))", _terms[i])
             _t1fix = 1;
-            _t12ix = 1;
+            _t2fix = 1;
             exp = ''
             if _t1.group(1) != None and _t2.group(1) != None:
                 if _t1.group(2) != None and _t2.group(2) != None:
@@ -34,7 +34,7 @@ def multipy(_terms):
                     exp = "^" + str(int(_t2.group(2)) + 1)
                 else:
                     exp = "^2"
-            if _t1.group(1) != None or _t2.group(1) != None:
+            if (_t1.group(1) != None and _t1.group(2) != 0) or (_t2.group(1) != None and _t2.group(2) != 0):
                 base = True
             if _t1.group(1):
                 _t1fix = int(_t1.group(1))
