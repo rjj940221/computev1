@@ -6,7 +6,7 @@ import re;
 
 def check_poly(_poly):
     return re.match(
-        "^(\s*-?(?:(?:\d*[xX])|(?:\d+))(?:\^[012]{1})?)(?:\s*([+\-*])\s*(\s*-?(?:(?:\d*[xX])|(?:\d+))(?:\^[012]{1})?)\s*)*\s*(=)(\s*-?(?:(?:\d*[xX])|(?:\d+))(?:\^[012]{1})?)(?:\s*([+\-*])\s*(\s*-?(?:(?:\d*[xX])|(?:\d+))(?:\^[012]{1})?)\s*)*$",
+        "^(\s*-?(?:(?:\d*(?:\.\d+)?[xX])|(?:\d+(?:\.\d+)?))(?:\^[012]{1})?)(?:\s*([+\-*])\s*(\s*-?(?:(?:\d*(?:\.\d+)?[xX])|(?:\d+)(?:\.\d+)?)(?:\^[012]{1})?)\s*)*\s*(=)(\s*-?(?:(?:\d*(?:\.\d+)?[xX])|(?:\d+(?:\.\d+)?))(?:\^[012]{1})?)(?:\s*([+\-*])\s*(\s*-?(?:(?:\d*(?:\.\d+)?[xX])|(?:\d+(?:\.\d+)?))(?:\^[012]{1})?)\s*)*$",
         _poly)
 
 
@@ -27,11 +27,11 @@ def multipy(_terms):
             exp = ''
             if _t1.group(1) != None and _t2.group(1) != None:
                 if _t1.group(2) != None and _t2.group(2) != None:
-                    exp = "^" + str(int(_t1.group(2)) + int(_t2.group(2)))
+                    exp = "^" + str(float(_t1.group(2)) + float(_t2.group(2)))
                 elif _t1.group(2) != None:
-                    exp = "^" + str(int(_t1.group(2)) + 1)
+                    exp = "^" + str(float(_t1.group(2)) + 1)
                 elif _t2.group(2) != None:
-                    exp = "^" + str(int(_t2.group(2)) + 1)
+                    exp = "^" + str(float(_t2.group(2)) + 1)
                 else:
                     exp = "^2"
             elif _t1.group(1) != None and _t1.group(2) > '1':
@@ -42,13 +42,13 @@ def multipy(_terms):
             if (_t1.group(1) != None and _t1.group(2) != '0') or (_t2.group(1) != None and _t2.group(2) != '0'):
                 base = True
             if _t1.group(1):
-                _t1fix = int(_t1.group(1))
+                _t1fix = float(_t1.group(1))
             elif _t1.group(3):
-                _t1fix = int(_t1.group(3))
+                _t1fix = float(_t1.group(3))
             if _t2.group(1):
-                _t2fix = int(_t2.group(1))
+                _t2fix = float(_t2.group(1))
             elif _t2.group(3):
-                _t2fix = int(_t2.group(3))
+                _t2fix = float(_t2.group(3))
             res = _t1fix * _t2fix
             if base:
                 res = str(res) + 'x'
@@ -67,12 +67,12 @@ def map_terms(_list):
     _map = {'0': 0, '1': 0, '2': 0}
     try:
         for t in _list:
-            m = re.match("([+-])(?:(\d*)[xX](?:\^(\d{1}))?|(\d+))", t)
+            m = re.match("([+-])(?:(\d*)[xX](?:\^(\d{1}))?|(\d+(?:\.\d*)?))", t)
             if m.group(4) != None:
                 if m.group(1) == '-':
-                    _map['0'] = _map['0'] - int(m.group(4))
+                    _map['0'] = _map['0'] - float(m.group(4))
                 else:
-                    _map['0'] = _map['0'] + int(m.group(4))
+                    _map['0'] = _map['0'] + float(m.group(4))
             else:
                 if m.group(1) == '-':
                     if m.group(2):
@@ -82,12 +82,12 @@ def map_terms(_list):
                 else:
                     if m.group(3):
                         if m.group(2):
-                            _map[m.group(3)] = _map[m.group(3)] + int(m.group(2))
+                            _map[m.group(3)] = _map[m.group(3)] + float(m.group(2))
                         else:
                             _map[m.group(3)] = _map[m.group(3)] + 1
                     else:
                         if m.group(2):
-                            _map['1'] = _map['1'] + int(m.group(2))
+                            _map['1'] = _map['1'] + float(m.group(2))
                         else:
                             _map['1'] = _map['1'] + 1
     except KeyError:
@@ -204,17 +204,14 @@ def solve_equasion(_m):
 
 
 def simplify(_poly):
-    pattern = "\s*[+\-*\/]?\s*(?:-)?\s*(?:(?:\d*[xX])|\d+)(?:\^[012]{1})?\s*";
+    pattern = "\s*[+\-*\/]?\s*(?:-)?\s*(?:(?:\d*(?:\.\d+)?[xX])|\d+(?:\.\d+)?)(?:\^[012]{1})?\s*";
     _split = _poly.split('=')
-    print "left: " + _split[0];
     _left = re.findall(pattern, _split[0])
     _right = re.findall(pattern, _split[1])
     if not re.match("^[+\-*]", _left[0]):
         _left[0] = "+" + _left[0]
     if not re.match("^[+\-*]", _right[0]):
         _right[0] = "+" + _right[0]
-    print _left;
-    print _right;
     multipy(_left)
     multipy(_right)
     for t in _left:
