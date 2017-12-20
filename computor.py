@@ -34,7 +34,12 @@ def multipy(_terms):
                     exp = "^" + str(int(_t2.group(2)) + 1)
                 else:
                     exp = "^2"
-            if (_t1.group(1) != None and _t1.group(2) != 0) or (_t2.group(1) != None and _t2.group(2) != 0):
+            elif _t1.group(1) != None and _t1.group(2) > '1':
+                exp = "^" + _t1.group(2)
+            elif _t2.group(1) != None and _t2.group(2) > '1':
+                exp = "^" + _t2.group(2)
+
+            if (_t1.group(1) != None and _t1.group(2) != '0') or (_t2.group(1) != None and _t2.group(2) != '0'):
                 base = True
             if _t1.group(1):
                 _t1fix = int(_t1.group(1))
@@ -52,7 +57,6 @@ def multipy(_terms):
                 res = '-' + res
             else:
                 res = '+' + res
-            print res
             _terms[i - 1] = res
             _terms.remove(_terms[i])
         else:
@@ -76,10 +80,16 @@ def map_terms(_list):
                     else:
                         _map[m.group(3)] = _map[m.group(3)] - 1
                 else:
-                    if m.group(2):
-                        _map[m.group(3)] = _map[m.group(3)] + int(m.group(2))
+                    if m.group(3):
+                        if m.group(2):
+                            _map[m.group(3)] = _map[m.group(3)] + int(m.group(2))
+                        else:
+                            _map[m.group(3)] = _map[m.group(3)] + 1
                     else:
-                        _map[m.group(3)] = _map[m.group(3)] + 1
+                        if m.group(2):
+                            _map['1'] = _map['1'] + int(m.group(2))
+                        else:
+                            _map['1'] = _map['1'] + 1
     except KeyError:
         print "Exceeds the 2nd degree found degree {0}".format(m.group(3))
         sys.exit(0);
@@ -89,7 +99,7 @@ def map_terms(_list):
 def print_step(_ml, _mr):
     for i in ['0', '1', '2']:
         if _ml[i] != 0:
-            if _ml[i] > 0 :
+            if _ml[i] > 0:
                 if i == '0':
                     sys.stdout.write(str(_ml[i]))
                 else:
@@ -97,12 +107,12 @@ def print_step(_ml, _mr):
             else:
                 sys.stdout.write("- " + str(_ml[i] * -1))
             if i == '2':
-                sys.stdout.write("X^" + str(i))
+                sys.stdout.write("X^" + str(i) + ' ')
             elif i == '1':
-                sys.stdout.write('X')
+                sys.stdout.write("X ")
             else:
                 sys.stdout.write(' ')
-    sys.stdout.write(" = ")
+    sys.stdout.write("= ")
     if _mr['0'] == 0 and _mr['1'] == 0 and _mr['2'] == 0:
         sys.stdout.write('0')
     else:
@@ -122,6 +132,75 @@ def print_step(_ml, _mr):
                 else:
                     sys.stdout.write(' ')
     print ""
+
+
+def pow_ten(num):
+    res = 1.0
+    if num < 0:
+        num = -1 * num
+    for i in range(0, num):
+        res = res * 10.0
+    return res
+
+
+def sqrt(num):
+    t_num = num
+    res = 0.0
+    m = 8
+    j = 1.0
+    for i in range(m, 0, -1):
+        if t_num - ((2 * res) + (j * pow_ten(i))) * (j * pow_ten(i)) >= 0:
+            while t_num - ((2 * res) + (j * pow_ten(i))) * (j * pow_ten(i)) >= 0:
+                j = j + 1
+                if j >= 10:
+                    break
+            j = j - 1
+            t_num = t_num - ((2 * res) + (j * pow_ten(i))) * (j * pow_ten(i))
+            res = res + (j * pow_ten(i))
+            j = 1.0
+
+    for i in range(0, -m, -1):
+        if t_num - ((2 * res) + (j * pow_ten(i))) * (j * pow_ten(i)) >= 0:
+            while t_num - ((2 * res) + (j * pow_ten(i))) * (j * pow_ten(i)) >= 0:
+                j = j + 1
+            j = j - 1
+            t_num = t_num - ((2 * res) + (j * pow_ten(i))) * (j * pow_ten(i))
+            res = res + (j * pow_ten(i))
+            j = 1.0
+    return res
+
+
+def solve_quad(_m):
+    _div = 2 * _m['2']
+    _sqr = _m['1'] * _m['1'] - (4 * _m['2'] * _m['0'])
+    if _div == 0:
+        print "Unsolvable zero division"
+        sys.exit(0)
+    if _sqr < 0:
+        print "Unsolvable sqrt of negative number"
+        sys.exit(0)
+    _t = -1 * _m['1']
+    _sqr = sqrt(_sqr)
+    print _sqr
+    pos = (_t + _sqr) / _div
+    neg = (_t - _sqr) / _div
+    print "X = " + str(pos)
+    if pos != neg:
+        print "Or X = " + str(neg)
+
+
+def solve_lineior(_m):
+    _num = -1 * _m['0']
+    if _m['1'] != 0:
+        _num = _num / _m['1']
+    print "X = " + str(_num)
+
+
+def solve_equasion(_m):
+    if _m['2'] != 0:
+        solve_quad(_m)
+    elif _m['1'] != 0:
+        solve_lineior(_m)
 
 
 def simplify(_poly):
@@ -144,11 +223,16 @@ def simplify(_poly):
             _right.remove(t)
     _ml = map_terms(_left)
     _mr = map_terms(_right)
+    _print = False
     print_step(_ml, _mr)
     for i in ['0', '1', '2']:
-        _ml[i] = _ml[i] - _mr[i]
-        _mr[i] = 0
-    print_step(_ml, _mr)
+        if _mr[i] != 0:
+            _ml[i] = _ml[i] - _mr[i]
+            _mr[i] = 0
+            _print = True
+    if _print:
+        print_step(_ml, _mr)
+    solve_equasion(_ml)
 
 
 poly = "";
