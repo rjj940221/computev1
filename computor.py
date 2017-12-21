@@ -6,12 +6,13 @@ import re;
 
 def check_poly(_poly):
     return re.match(
-        "^(\s*-?(?:(?:\d*(?:\.\d+)?[xX])|(?:\d+(?:\.\d+)?))(?:\^[012]{1})?)(?:\s*([+\-*])\s*(\s*-?(?:(?:\d*(?:\.\d+)?[xX])|(?:\d+)(?:\.\d+)?)(?:\^[012]{1})?)\s*)*\s*(=)(\s*-?(?:(?:\d*(?:\.\d+)?[xX])|(?:\d+(?:\.\d+)?))(?:\^[012]{1})?)(?:\s*([+\-*])\s*(\s*-?(?:(?:\d*(?:\.\d+)?[xX])|(?:\d+(?:\.\d+)?))(?:\^[012]{1})?)\s*)*$",
+        "^\s*-?(?:(?:\d*(?:\.\d+)?[xX](?:\^\d+)?)|(?:\d+(?:\.\d+)?))(?:\s*(?:[+\-]|\*\s*-?)(?:\s*(?:(?:\d*(?:\.\d+)?[xX])(?:\^\d+)?|(?:\d+)(?:\.\d+)?))\s*)*\s*=\s*-?(?:(?:\d*(?:\.\d+)?[xX](?:\^\d+)?)|(?:\d+(?:\.\d+)?))(?:\s*(?:[+\-]|\*\s*-?)(?:\s*(?:(?:\d*(?:\.\d+)?[xX])(?:\^\d+)?|(?:\d+)(?:\.\d+)?))\s*)*\s*$",
         _poly)
 
 
 def multipy(_terms):
     i = 1
+    pattern = "(?:[*]-?|[+\-])(?:(\d*(?:\.\d+)?)[xX](?:\^(\d{1}))?|(\d+(?:\.\d+)?))"
     while i < len(_terms):
         sign = 1;
         base = False
@@ -20,8 +21,8 @@ def multipy(_terms):
                 sign = 1
             elif re.match('-', _terms[i]) or re.match('-', _terms[i - 1]):
                 sign = -1;
-            _t1 = re.match("(?:[*]-?|[+\-])(?:(\d*)[xX](?:\^(\d{1}))?|(\d+))", _terms[i - 1])
-            _t2 = re.match("(?:[*]-?|[+\-])(?:(\d*)[xX](?:\^(\d{1}))?|(\d+))", _terms[i])
+            _t1 = re.match(pattern, _terms[i - 1])
+            _t2 = re.match(pattern, _terms[i])
             _t1fix = 1;
             _t2fix = 1;
             exp = ''
@@ -64,90 +65,105 @@ def multipy(_terms):
 
 
 def map_terms(_list):
-    _map = {'0': 0, '1': 0, '2': 0}
+    _map = {0: 0.0, 1: 0.0, 2: 0.0}
     try:
         for t in _list:
-            m = re.match("([+-])(?:(\d*)[xX](?:\^(\d{1}))?|(\d+(?:\.\d*)?))", t)
+            m = re.match("([+-])(?:(\d*(?:\.\d+)?)[xX](?:\^(\d{1}))?|(\d+(?:\.\d+)?))", t)
             if m.group(4) != None:
                 if m.group(1) == '-':
-                    _map['0'] = _map['0'] - float(m.group(4))
+                    _map[0] = _map[0] - float(m.group(4))
                 else:
-                    _map['0'] = _map['0'] + float(m.group(4))
+                    _map[0] = _map[0] + float(m.group(4))
             else:
+                if m.group(3) and _map.has_key(int(m.group(3))) == False:
+                    _map[int(m.group(3))] = 0.0
                 if m.group(1) == '-':
-                    if m.group(2):
-                        _map[m.group(3)] = _map[m.group(3)] - int(m.group(2))
+                    if m.group(3):
+                        if m.group(2):
+                            _map[int(m.group(3))] = _map[int(m.group(3))] - float(m.group(2))
+                        else:
+                            _map[int(m.group(3))] = _map[int(m.group(3))] - 1
                     else:
-                        _map[m.group(3)] = _map[m.group(3)] - 1
+                        if m.group(2):
+                            _map[1] = _map[1] - float(m.group(2))
+                        else:
+                            _map[1] = _map[1] - 1
                 else:
                     if m.group(3):
                         if m.group(2):
-                            _map[m.group(3)] = _map[m.group(3)] + float(m.group(2))
+                            _map[int(m.group(3))] = _map[int(m.group(3))] + float(m.group(2))
                         else:
-                            _map[m.group(3)] = _map[m.group(3)] + 1
+                            _map[int(m.group(3))] = _map[int(m.group(3))] + 1
                     else:
                         if m.group(2):
-                            _map['1'] = _map['1'] + float(m.group(2))
+                            _map[1] = _map[1] + float(m.group(2))
                         else:
-                            _map['1'] = _map['1'] + 1
+                            _map[1] = _map[1] + 1
     except KeyError:
         print "Exceeds the 2nd degree found degree {0}".format(m.group(3))
         sys.exit(0);
     return _map
 
 
-def print_step(_ml, _mr):
-    for i in ['0', '1', '2']:
-        if _ml[i] != 0:
-            if _ml[i] > 0:
-                if i == '0':
-                    sys.stdout.write(str(_ml[i]))
+def print_side(_m):
+    printZero = True
+    for exp, val in _m.items():
+        if val != 0:
+            printZero = False
+            if val > 0:
+                if exp == 0:
+                    sys.stdout.write(str(val))
                 else:
-                    sys.stdout.write("+ " + str(_ml[i]))
+                    sys.stdout.write("+ " + str(val))
             else:
-                sys.stdout.write("- " + str(_ml[i] * -1))
-            if i == '2':
-                sys.stdout.write("X^" + str(i) + ' ')
-            elif i == '1':
+                sys.stdout.write("- " + str(val * -1))
+            if exp > 1:
+                sys.stdout.write("X^" + str(exp) + ' ')
+            elif exp == 1:
                 sys.stdout.write("X ")
             else:
                 sys.stdout.write(' ')
+    if printZero:
+        sys.stdout.write('0 ')
+
+
+def print_step(_ml, _mr):
+    print_side(_ml)
     sys.stdout.write("= ")
-    if _mr['0'] == 0 and _mr['1'] == 0 and _mr['2'] == 0:
-        sys.stdout.write('0')
-    else:
-        for i in ['0', '1', '2']:
-            if _mr[i] != 0:
-                if _mr[i] > 0:
-                    if i == '0':
-                        sys.stdout.write(str(_mr[i]))
-                    else:
-                        sys.stdout.write("+ " + str(_mr[i]))
-                else:
-                    sys.stdout.write("- " + str(_mr[i] * -1))
-                if i == '2':
-                    sys.stdout.write("X^" + str(i))
-                elif i == '1':
-                    sys.stdout.write('X')
-                else:
-                    sys.stdout.write(' ')
+    print_side(_mr)
     print ""
+
+
+def print_degree(_m):
+    _max = 0
+    for key, val in _m.items():
+        if key > _max and val != 0:
+            _max = key
+    print "Polynomial degree: " + str(_max)
+    if _max > 2:
+        print "The polynomial degree is strictly greater than 2, I can't solve."
+        sys.exit(0);
 
 
 def pow_ten(num):
     res = 1.0
-    if num < 0:
-        num = -1 * num
-    for i in range(0, num):
-        res = res * 10.0
+    if num >= 0:
+        for i in range(0, num):
+            res = res * 10.0
+    else:
+        num = num * -1
+        for i in range(0, num):
+            res = res * 0.1
     return res
 
 
 def sqrt(num):
     t_num = num
     res = 0.0
-    m = 8
+    m = 12
     j = 1.0
+    if num < 0:
+        raise ValueError('square root not defined for negative numbers')
     for i in range(m, 0, -1):
         if t_num - ((2 * res) + (j * pow_ten(i))) * (j * pow_ten(i)) >= 0:
             while t_num - ((2 * res) + (j * pow_ten(i))) * (j * pow_ten(i)) >= 0:
@@ -171,17 +187,16 @@ def sqrt(num):
 
 
 def solve_quad(_m):
-    _div = 2 * _m['2']
-    _sqr = _m['1'] * _m['1'] - (4 * _m['2'] * _m['0'])
+    _div = 2 * _m[2]
+    _sqr = (_m[1] * _m[1]) - (4 * _m[0] * _m[2])
     if _div == 0:
         print "Unsolvable zero division"
         sys.exit(0)
     if _sqr < 0:
         print "Unsolvable sqrt of negative number"
         sys.exit(0)
-    _t = -1 * _m['1']
+    _t = -1 * _m[1]
     _sqr = sqrt(_sqr)
-    print _sqr
     pos = (_t + _sqr) / _div
     neg = (_t - _sqr) / _div
     print "X = " + str(pos)
@@ -190,21 +205,26 @@ def solve_quad(_m):
 
 
 def solve_lineior(_m):
-    _num = -1 * _m['0']
-    if _m['1'] != 0:
-        _num = _num / _m['1']
+    _num = -1 * _m[0]
+    if _m[1] != 0:
+        _num = _num / _m[1]
     print "X = " + str(_num)
 
 
-def solve_equasion(_m):
-    if _m['2'] != 0:
+def solve_equasion(_m, lc, rc):
+    if _m[2] != 0:
         solve_quad(_m)
-    elif _m['1'] != 0:
+    elif _m[1] != 0:
         solve_lineior(_m)
+    else:
+        if _m[0] == 0:
+            print str(lc) + " = " + str(rc)
+        else:
+            print str(lc) + " != " + str(rc)
 
 
 def simplify(_poly):
-    pattern = "\s*[+\-*\/]?\s*(?:-)?\s*(?:(?:\d*(?:\.\d+)?[xX])|\d+(?:\.\d+)?)(?:\^[012]{1})?\s*";
+    pattern = "\s*(?:[+\-]?|\*\s*-?)?\s*(?:(?:\d*(?:\.\d+)?[xX])(?:\^\d+)?|\d+(?:\.\d+)?)\s*";
     _split = _poly.split('=')
     _left = re.findall(pattern, _split[0])
     _right = re.findall(pattern, _split[1])
@@ -214,38 +234,34 @@ def simplify(_poly):
         _right[0] = "+" + _right[0]
     multipy(_left)
     multipy(_right)
-    for t in _left:
-        if _right.__contains__(t):
-            _left.remove(t)
-            _right.remove(t)
     _ml = map_terms(_left)
     _mr = map_terms(_right)
-    _print = False
+    sys.stdout.write('Simplified: ')
     print_step(_ml, _mr)
-    for i in ['0', '1', '2']:
-        if _mr[i] != 0:
-            _ml[i] = _ml[i] - _mr[i]
-            _mr[i] = 0
-            _print = True
-    if _print:
-        print_step(_ml, _mr)
-    solve_equasion(_ml)
+    lc = _ml[0]
+    rc = _mr[0]
+    for exp in _ml.keys():
+        if _mr.has_key(exp) and _mr[exp] != 0:
+            _ml[exp] = _ml[exp] - _mr[exp]
+            _mr[exp] = 0
+    sys.stdout.write('Reduced form: ')
+    print_step(_ml, _mr)
+    print_degree(_ml)
+    solve_equasion(_ml, lc, rc)
 
 
-poly = "";
+poly = ""
 
 if len(sys.argv) == 1:
     print "Please specify a polynomial.";
     exit(0);
 elif len(sys.argv) == 2:
-    poly = sys.argv[1];
-    print "Got Polynomial[" + sys.argv[1] + ']';
+    poly = sys.argv[1]
 else:
-    poly = ''.join(sys.argv[1:len(sys.argv)])
-    print "made Polynomial[" + poly + ']';
+    poly = ''.join(sys.argv[1 : len(sys.argv)])
 
 poly = poly.replace(' ', '')
 if check_poly(poly):
-    simplify(poly);
+    simplify(poly)
 else:
-    print "is not polynomial";
+    print "is not polynomial"
