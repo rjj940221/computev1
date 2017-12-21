@@ -106,12 +106,11 @@ def map_terms(_list):
 
 
 def print_side(_m):
-    printZero = True
+    print_zero = True
     for exp, val in _m.items():
         if val != 0:
-            printZero = False
             if val > 0:
-                if exp == 0:
+                if print_zero:
                     sys.stdout.write(str(val))
                 else:
                     sys.stdout.write("+ " + str(val))
@@ -123,7 +122,8 @@ def print_side(_m):
                 sys.stdout.write("X ")
             else:
                 sys.stdout.write(' ')
-    if printZero:
+            print_zero = False
+    if print_zero:
         sys.stdout.write('0 ')
 
 
